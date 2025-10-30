@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pediatric Dosing Calculator — Clinic Formulary (Light)</title>
+<style>
+  :root{
+    --bg:#f7f9fc; --card:#ffffff; --muted:#5b6b7c; --text:#0c1a2b; --accent:#165dff;
+    --border:#dfe6ef; --header:#0d47a1; --warn:#b45309; --note:#475569;
+  }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+    -webkit-text-size-adjust:100%;
+  }
+  header{padding:16px 14px;background:#eef4ff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+  h1{margin:0 0 4px;font-size:18px;font-weight:700;color:#0f2e6e}
+  .meta{font-size:13px;color:#26415f}
+  .container{padding:12px;max-width:1200px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  label{font-size:12px;color:var(--muted);display:block;margin:0 0 4px}
+  input[type="number"]{background:#fff;border:1px solid var(--border);color:var(--text);
+    padding:10px 12px;border-radius:10px;min-width:120px;font-size:16px}
+  input[type="checkbox"]{transform:scale(1.1);margin-right:6px}
+  .btn{background:var(--accent);color:#fff;border:none;padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:600}
+  .btn.secondary{background:#eef2ff;color:#183153;border:1px solid #c7d2fe}
+  .controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
+  @media (min-width:720px){ .controls{grid-template-columns:repeat(5,minmax(0,1fr))} }
+  .badge{padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:#f5f8ff;color:#1f2d4d;font-size:11px}
+  .sm{font-size:12px}
+  .banner{margin-top:8px;padding:10px 12px;border-radius:10px;background:#fff8e6;border:1px solid #ffe0a6;color:#8a4b0f;font-size:13px;display:none}
+  /* Table */
+  .table-wrap{overflow:auto;border-radius:12px;border:1px solid var(--border)}
+  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card)}
+  th,td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:left;vertical-align:top}
+  thead th{position:sticky;top:64px;background:#fcfdff;border-bottom:1px solid var(--border);z-index:5;font-size:12px;color:#2b3b4f;letter-spacing:.02em}
+  tbody td{font-size:14px;line-height:1.25}
+  .mono{font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border);color:#27354a;background:#f6f8fc;white-space:nowrap}
+  .note{color:var(--note);font-size:12px}
+  .cap{color:#8a4b0f;font-size:12px}
+  /* Make the first columns narrower on phones */
+  @media (max-width:720px){
+    th:nth-child(1), td:nth-child(1){min-width:140px}
+    th:nth-child(2), td:nth-child(2){min-width:92px}
+    th:nth-child(3), td:nth-child(3){min-width:115px}
+    th:nth-child(4), td:nth-child(4){min-width:120px}
+    th:nth-child(5), td:nth-child(5){min-width:120px}
+    th:nth-child(6), td:nth-child(6){min-width:220px}
+  }
+  footer{padding:18px;color:#738099;text-align:center;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Pediatric Dosing Calculator — Clinic Formulary</h1>
+  <div class="meta">Enter weight to calculate typical minimum and maximum pediatric doses for your stocked medicines. Basis indicates per <b>dose</b> vs per <b>day</b>. Always shows the full list.</div>
+</header>
+
+<div class="container">
+  <div class="card">
+    <div class="controls">
+      <div>
+        <label>Weight (kg)</label>
+        <input id="wt" type="number" inputmode="decimal" step="0.1" min="1" value="20">
+      </div>
+      <div>
+        <label>Show</label>
+        <div>
+          <label class="sm"><input type="checkbox" id="showPerDose" checked>Per dose</label>
+          <label class="sm"><input type="checkbox" id="showPerDay" checked>Per day</label>
+        </div>
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button id="print" class="btn secondary">Print / Save PDF</button>
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button id="reset" class="btn secondary">Reset</button>
+      </div>
+    </div>
+    <details style="margin-top:8px">
+      <summary><span class="badge">Info & rounding rules</span></summary>
+      <div class="sm" style="margin-top:6px;line-height:1.45">
+        • Liquids rounded to <b>0.1 mL</b>.<br>
+        • Chewable 80&nbsp;mg acetaminophen can show <b>quarter</b> tablets (0.25). Other tablets are rounded to <b>half</b> tablets (0.5).<br>
+        • <b>Basis</b> shows if mg/kg is per dose or per day; divide daily totals per your schedule (e.g., BID/TID/QID).<br>
+        • This tool lists common ranges; verify per indication and local guidance.
+      </div>
+    </details>
+    <div id="banner" class="banner"></div>
+  </div>
+
+  <div class="table-wrap" style="margin-top:12px">
+    <table id="table">
+      <thead>
+        <tr>
+          <th>Medicine</th>
+          <th>Basis</th>
+          <th>Range (mg/kg)</th>
+          <th class="mono">Min amount</th>
+          <th class="mono">Max amount</th>
+          <th>Forms & unit conversions</th>
+          <th>Caps / Notes</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<footer>
+  Mobile-optimized light theme • Rounds to practical units • Updated 2025‑10‑30
+</footer>
+
+<script>
+const meds = [
+  { name:"Acetaminophen", basis:"per dose", min:10, max:15, cap:"Max 75 mg/kg/day (≤4,000 mg/day). q4–6h PRN.",
+    forms:[
+      {type:"liquid", label:"Liquid 160 mg/5 mL", mgPerML:160/5},
+      {type:"tab80",  label:"Chewable 80 mg", mgPerTab:80},
+      {type:"tab",    label:"Tablet 325 mg", mgPerTab:325},
+      {type:"tab",    label:"Tablet 500 mg", mgPerTab:500},
+    ]},
+  { name:"Ibuprofen", basis:"per dose", min:5, max:10, cap:"Max 40 mg/kg/day (≤2,400 mg/day typical). q6–8h PRN; avoid <6 mo.",
+    forms:[
+      {type:"tab", label:"Tablet 200 mg", mgPerTab:200},
+      {type:"tab", label:"Tablet 400 mg", mgPerTab:400},
+      {type:"tab", label:"Tablet 600 mg", mgPerTab:600},
+    ]},
+  { name:"Amoxicillin", basis:"per day", min:45, max:90, cap:"Max ~4,000 mg/day. Divide BID–TID per indication.",
+    forms:[
+      {type:"tab", label:"Dissolve tab 125 mg", mgPerTab:125},
+      {type:"tab", label:"Chew 250 mg", mgPerTab:250},
+      {type:"tab", label:"Capsule 500 mg", mgPerTab:500},
+    ]},
+  { name:"Azithromycin", basis:"per day", min:5, max:10, cap:"Typical: 10 mg/kg day 1 (cap 500 mg), then 5 mg/kg days 2–5.",
+    forms:[
+      {type:"liquid", label:"Liquid 200 mg/5 mL", mgPerML:200/5},
+      {type:"tab", label:"Tablet 250 mg", mgPerTab:250},
+      {type:"tab", label:"Tablet 500 mg", mgPerTab:500},
+    ]},
+  { name:"Ceftriaxone (IM/IV)", basis:"per day", min:50, max:75, cap:"Max ~2,000 mg/day usual; gonorrhea 250–500 mg IM ×1.",
+    forms:[
+      {type:"vial", label:"Vial 250 mg", mgPerVial:250},
+      {type:"vial", label:"Vial 1,000 mg", mgPerVial:1000},
+    ]},
+  { name:"Cephalexin", basis:"per day", min:25, max:50, cap:"Max ~4,000 mg/day. Divide BID–QID.",
+    forms:[
+      {type:"tab", label:"Capsule 250 mg", mgPerTab:250},
+      {type:"tab", label:"Capsule 500 mg", mgPerTab:500},
+    ]},
+  { name:"TMP-SMX (dose by TMP)", basis:"per day", min:6, max:12, cap:"Divide BID. Dosed on TMP component.",
+    forms:[
+      {type:"liquid", label:"Liquid (TMP 40 mg/5 mL)", mgPerML:40/5},
+      {type:"tab", label:"SS 80 mg TMP (400/80)", mgPerTab:80},
+      {type:"tab", label:"DS 160 mg TMP (800/160)", mgPerTab:160},
+    ]},
+  { name:"Doxycycline (≥8 y)", basis:"per day", min:4, max:4.4, cap:"Typical cap 200 mg/day; divide BID. Avoid <8 years.",
+    forms:[
+      {type:"tab", label:"Tablet 100 mg", mgPerTab:100},
+    ]},
+  { name:"Fluconazole", basis:"per day", min:3, max:6, cap:"Loading 6 mg/kg common day 1; then 3–6 mg/kg/day.",
+    forms:[
+      {type:"tab", label:"Tablet 100 mg", mgPerTab:100},
+      {type:"tab", label:"Tablet 150 mg", mgPerTab:150},
+      {type:"tab", label:"Tablet 200 mg", mgPerTab:200},
+    ]},
+  { name:"Metronidazole", basis:"per day", min:20, max:30, cap:"Divide TID; indication specific.",
+    forms:[
+      {type:"tab", label:"Tablet 200 mg", mgPerTab:200},
+      {type:"tab", label:"Tablet 400 mg", mgPerTab:400},
+    ]},
+  { name:"Ondansetron", basis:"per dose", min:0.15, max:0.15, cap:"Often single 0.15 mg/kg dose (max 8 mg).",
+    forms:[
+      {type:"tab", label:"Tablet/ODT 4 mg", mgPerTab:4},
+    ]},
+  { name:"Diphenhydramine (Benadryl)", basis:"per dose", min:1, max:1, cap:"Max 50 mg/dose; q6h PRN (age cautions).",
+    forms:[
+      {type:"liquid", label:"Liquid 12.5 mg/5 mL", mgPerML:12.5/5},
+      {type:"tab", label:"Tablet 25 mg", mgPerTab:25},
+    ]},
+  { name:"Prednisone", basis:"per day", min:1, max:2, cap:"Often cap 60 mg/day.",
+    forms:[
+      {type:"tab", label:"Tablet 5 mg", mgPerTab:5},
+      {type:"tab", label:"Tablet 10 mg", mgPerTab:10},
+    ]},
+  { name:"Ivermectin", basis:"per dose", min:0.2, max:0.2, cap:"Single dose for many indications; verify regimen.",
+    forms:[
+      {type:"tab", label:"Tablet 6 mg", mgPerTab:6},
+    ]},
+  { name:"Albendazole", basis:"per dose", min:6, max:10, cap:"Many regimens; common single-dose 400 mg (>2 y) for STH.",
+    forms:[
+      {type:"tab", label:"Tablet 200 mg", mgPerTab:200},
+      {type:"tab", label:"Tablet 400 mg", mgPerTab:400},
+    ]},
+];
+
+function parseKg(raw){
+  if (raw == null) return NaN;
+  let s = String(raw).trim();
+  if (!s) return NaN;
+  if (s.includes(",") && !s.includes(".")) s = s.replace(",", ".");
+  const v = Number(s);
+  return Number.isFinite(v) ? v : NaN;
+}
+function roundTo(value, step){ return Math.round(value/step)*step; }
+
+function render(){
+  const kg = parseKg(document.getElementById('wt').value);
+  const qDose = document.getElementById('showPerDose').checked;
+  const qDay  = document.getElementById('showPerDay').checked;
+  const tbody = document.getElementById('tbody');
+  const banner = document.getElementById('banner');
+
+  tbody.innerHTML = '';
+
+  if (!Number.isFinite(kg) || kg <= 0){
+    banner.style.display = 'block';
+    banner.textContent = "Enter a valid weight in kilograms (e.g., 20 or 20.5).";
+    return;
+  } else {
+    banner.style.display = 'none';
+    banner.textContent = '';
+  }
+
+  let shown = 0;
+  meds.forEach(m=>{
+    if(m.basis === 'per dose' && !qDose) return;
+    if(m.basis === 'per day' && !qDay) return;
+
+    const minMg = kg * m.min;
+    const maxMg = kg * m.max;
+
+    const formsHTML = m.forms.map(f=>{
+      if(f.type==='liquid'){
+        const minmL = roundTo(minMg / f.mgPerML, 0.1).toFixed(1);
+        const maxmL = roundTo(maxMg / f.mgPerML, 0.1).toFixed(1);
+        return `<div><span class="pill">${f.label}</span><div class="sm mono">Min: ${minmL} mL • Max: ${maxmL} mL</div></div>`;
+      } else if(f.type==='tab80'){
+        const minTabs = (Math.round((minMg / f.mgPerTab)/0.25)*0.25).toFixed(2);
+        const maxTabs = (Math.round((maxMg / f.mgPerTab)/0.25)*0.25).toFixed(2);
+        return `<div><span class="pill">${f.label}</span><div class="sm mono">Min: ${minTabs} tab • Max: ${maxTabs} tab</div></div>`;
+      } else if(f.type==='tab'){
+        const minTabs = (Math.round((minMg / f.mgPerTab)/0.5)*0.5).toFixed(1);
+        const maxTabs = (Math.round((maxMg / f.mgPerTab)/0.5)*0.5).toFixed(1);
+        return `<div><span class="pill">${f.label}</span><div class="sm mono">Min: ${minTabs} tab • Max: ${maxTabs} tab</div></div>`;
+      } else if(f.type==='vial'){
+        const minVials = Math.ceil(minMg / f.mgPerVial);
+        const maxVials = Math.ceil(maxMg / f.mgPerVial);
+        return `<div><span class="pill">${f.label}</span><div class="sm mono">Min: ${minVials} vial(s) • Max: ${maxVials} vial(s)</div></div>`;
+      } else {
+        return '';
+      }
+    }).join('');
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><b>${m.name}</b></td>
+      <td><span class="pill">${m.basis}</span></td>
+      <td>${m.min}–${m.max} mg/kg</td>
+      <td class="mono">${(minMg).toFixed(2)} mg<br><span class="note">${m.min} mg/kg × ${kg} kg</span></td>
+      <td class="mono">${(maxMg).toFixed(2)} mg<br><span class="note">${m.max} mg/kg × ${kg} kg</span></td>
+      <td>${formsHTML}</td>
+      <td><span class="cap">${m.cap||''}</span></td>
+    `;
+    tbody.appendChild(tr);
+    shown++;
+  });
+
+  if (shown === 0){
+    banner.style.display = 'block';
+    banner.textContent = "All rows are hidden by filters. Enable “Per dose” and/or “Per day” to show medicines.";
+  }
+}
+
+function boot(){
+  render();
+  document.getElementById('wt').addEventListener('input', render);
+  document.getElementById('wt').addEventListener('change', render);
+  document.getElementById('showPerDose').addEventListener('change', render);
+  document.getElementById('showPerDay').addEventListener('change', render);
+  document.getElementById('reset').addEventListener('click', ()=>{
+    document.getElementById('wt').value = 20;
+    document.getElementById('showPerDose').checked = true;
+    document.getElementById('showPerDay').checked = true;
+    render();
+  });
+  document.getElementById('print').addEventListener('click', ()=>window.print());
+}
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
