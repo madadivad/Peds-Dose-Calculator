@@ -3,17 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Pediatric Dosing Calculator — Clinic Formulary (Light)</title>
+<title>Pediatric Dosing Calculator — Clinic Formulary</title>
+
+<!-- iPhone "Add to Home Screen" (standalone app-like) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Peds Dosing">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' ry='96' fill='%23ffffff'/%3E%3Ccircle cx='256' cy='256' r='168' fill='%23165dff'/%3E%3Ctext x='256' y='292' text-anchor='middle' font-size='180' font-family='-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial' fill='white'%3EP%3C/text%3E%3C/svg%3E">
+
+<!-- Favicon (tab icon); harmless on iOS, nice on desktop -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 512 512'%3E%3Ccircle cx='256' cy='256' r='256' fill='%23ffffff'/%3E%3Ccircle cx='256' cy='256' r='190' fill='%23165dff'/%3E%3Ctext x='256' y='300' text-anchor='middle' font-size='220' font-family='-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial' fill='white'%3EP%3C/text%3E%3C/svg%3E">
+
+<!-- (Optional) Web App Manifest for Android/desktop PWA; kept inline to stay single-file -->
+<link rel="manifest" href='data:application/manifest+json,{"name":"Pediatric Dosing Calculator","short_name":"Peds Dosing","start_url":"./","display":"standalone","background_color":"#ffffff","theme_color":"#165dff","icons":[{"src":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAlMBJH0OqL0AAAAASUVORK5CYII=","sizes":"192x192","type":"image/png"}]}'>
+<meta name="theme-color" content="#165dff">
+
 <style>
   :root{
     --bg:#f7f9fc; --card:#ffffff; --muted:#5b6b7c; --text:#0c1a2b; --accent:#165dff;
-    --border:#dfe6ef; --header:#0d47a1; --warn:#b45309; --note:#475569;
+    --border:#dfe6ef; --warn:#b45309; --note:#475569;
   }
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
     font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
     -webkit-text-size-adjust:100%;
   }
-  header{padding:16px 14px;background:#eef4ff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+  header{padding:16px 14px;background:#eef4ff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
   h1{margin:0 0 4px;font-size:18px;font-weight:700;color:#0f2e6e}
   .meta{font-size:13px;color:#26415f}
   .container{padding:12px;max-width:1200px;margin:0 auto}
@@ -29,17 +43,20 @@
   .badge{padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:#f5f8ff;color:#1f2d4d;font-size:11px}
   .sm{font-size:12px}
   .banner{margin-top:8px;padding:10px 12px;border-radius:10px;background:#fff8e6;border:1px solid #ffe0a6;color:#8a4b0f;font-size:13px;display:none}
+
   /* Table */
   .table-wrap{overflow:auto;border-radius:12px;border:1px solid var(--border)}
   table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card)}
   th,td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:left;vertical-align:top}
-  thead th{position:sticky;top:64px;background:#fcfdff;border-bottom:1px solid var(--border);z-index:5;font-size:12px;color:#2b3b4f;letter-spacing:.02em}
+  /* Sticky header: top:0 on mobile to avoid covering first row; large offset on big screens */
+  thead th{position:sticky;top:0;background:#fcfdff;border-bottom:1px solid var(--border);z-index:5;font-size:12px;color:#2b3b4f;letter-spacing:.02em;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+  @media (min-width:900px){ thead th{ top:64px } }
   tbody td{font-size:14px;line-height:1.25}
   .mono{font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border);color:#27354a;background:#f6f8fc;white-space:nowrap}
   .note{color:var(--note);font-size:12px}
   .cap{color:#8a4b0f;font-size:12px}
-  /* Make the first columns narrower on phones */
+  /* Column minimums for easier scrolling on phones */
   @media (max-width:720px){
     th:nth-child(1), td:nth-child(1){min-width:140px}
     th:nth-child(2), td:nth-child(2){min-width:92px}
@@ -81,7 +98,7 @@
       </div>
     </div>
     <details style="margin-top:8px">
-      <summary><span class="badge">Info & rounding rules</span></summary>
+      <summary><span class="badge">Info &amp; rounding rules</span></summary>
       <div class="sm" style="margin-top:6px;line-height:1.45">
         • Liquids rounded to <b>0.1 mL</b>.<br>
         • Chewable 80&nbsp;mg acetaminophen can show <b>quarter</b> tablets (0.25). Other tablets are rounded to <b>half</b> tablets (0.5).<br>
@@ -101,7 +118,7 @@
           <th>Range (mg/kg)</th>
           <th class="mono">Min amount</th>
           <th class="mono">Max amount</th>
-          <th>Forms & unit conversions</th>
+          <th>Forms &amp; unit conversions</th>
           <th>Caps / Notes</th>
         </tr>
       </thead>
@@ -111,10 +128,11 @@
 </div>
 
 <footer>
-  Mobile-optimized light theme • Rounds to practical units • Updated 2025‑10‑30
+  Light theme • Mobile sticky-header fix • Rounds to practical units • Updated 2025-10-30
 </footer>
 
 <script>
+/* ---- Formulary model (pediatric-relevant entries) ---- */
 const meds = [
   { name:"Acetaminophen", basis:"per dose", min:10, max:15, cap:"Max 75 mg/kg/day (≤4,000 mg/day). q4–6h PRN.",
     forms:[
@@ -197,6 +215,7 @@ const meds = [
     ]},
 ];
 
+/* ---- Helpers ---- */
 function parseKg(raw){
   if (raw == null) return NaN;
   let s = String(raw).trim();
@@ -207,6 +226,7 @@ function parseKg(raw){
 }
 function roundTo(value, step){ return Math.round(value/step)*step; }
 
+/* ---- Render ---- */
 function render(){
   const kg = parseKg(document.getElementById('wt').value);
   const qDose = document.getElementById('showPerDose').checked;
@@ -260,8 +280,8 @@ function render(){
       <td><b>${m.name}</b></td>
       <td><span class="pill">${m.basis}</span></td>
       <td>${m.min}–${m.max} mg/kg</td>
-      <td class="mono">${(minMg).toFixed(2)} mg<br><span class="note">${m.min} mg/kg × ${kg} kg</span></td>
-      <td class="mono">${(maxMg).toFixed(2)} mg<br><span class="note">${m.max} mg/kg × ${kg} kg</span></td>
+      <td class="mono">${minMg.toFixed(2)} mg<br><span class="note">${m.min} mg/kg × ${kg} kg</span></td>
+      <td class="mono">${maxMg.toFixed(2)} mg<br><span class="note">${m.max} mg/kg × ${kg} kg</span></td>
       <td>${formsHTML}</td>
       <td><span class="cap">${m.cap||''}</span></td>
     `;
@@ -275,6 +295,7 @@ function render(){
   }
 }
 
+/* ---- Boot ---- */
 function boot(){
   render();
   document.getElementById('wt').addEventListener('input', render);
